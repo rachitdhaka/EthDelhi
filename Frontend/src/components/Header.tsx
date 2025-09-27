@@ -45,8 +45,8 @@ export function Header() {
         key={item.path}
         to={item.path}
         className={`text-sm font-medium transition-colors ${
-          isActive ? 'text-white' : 'text-gray-400 hover:text-white'
-        }`}
+          isActive ? 'text-blue-700 border-b-2 border-blue-700' : 'text-gray-600 hover:text-blue-700 hover:border-blue-700'
+        } px-1 pt-1 border-b-2 border-transparent`}
       >
         {item.label}
       </Link>
@@ -54,11 +54,11 @@ export function Header() {
   };
 
   return (
-    <header className="bg-[#202124] border-b border-gray-800">
+    <header className="bg-white border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="h-16 flex items-center justify-between">
           <div className="flex items-center space-x-8">
-            <Link to="/" className="text-xl font-semibold text-white">
+            <Link to="/" className="text-xl font-semibold text-blue-700">
               OsamaBoom
             </Link>
             <nav className="hidden md:flex items-center space-x-6">
@@ -72,7 +72,7 @@ export function Header() {
             </div>
             <button
               type="button"
-              className="md:hidden inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white hover:bg-black focus:outline-none focus:ring-2 focus:ring-white"
+              className="md:hidden inline-flex items-center justify-center p-2 rounded-md text-gray-600 hover:text-blue-700 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-700"
               onClick={() => setIsMenuOpen((prev) => !prev)}
               aria-label="Toggle navigation menu"
             >
@@ -83,13 +83,13 @@ export function Header() {
       </div>
 
       {isMenuOpen && (
-        <div className="md:hidden border-t border-gray-800 bg-[#202124]">
+        <div className="md:hidden border-t border-gray-200 bg-white">
           <nav className="px-4 pt-2 pb-4 space-y-2">
             {NAV_ITEMS.map((item) => (
               <Link
                 key={item.path}
                 to={item.path}
-                className="block rounded-md px-3 py-2 text-base font-medium text-gray-300 hover:bg-black hover:text-white"
+                className="block rounded-md px-3 py-2 text-base font-medium text-gray-600 hover:bg-blue-50 hover:text-blue-700"
               >
                 {item.label}
               </Link>
