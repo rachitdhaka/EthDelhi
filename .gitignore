@@ -1,24 +1,82 @@
-# Logs
-logs
-*.log
+# ---------------------------
+# Node / General
+# ---------------------------
+node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
-lerna-debug.log*
+package-lock.json
+yarn.lock
+.pnpm-debug.log
 
-node_modules
-dist
-dist-ssr
-*.local
+# Environment files
+.env
+.env.*.local
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# Logs
+logs
+*.log
+*.log.*
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# OS-specific
 .DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+Thumbs.db
+
+# ---------------------------
+# Build / Output
+# ---------------------------
+dist/
+build/
+.cache/
+.next/
+out/
+.temp/
+
+# ---------------------------
+# Frontend (React + TypeScript)
+# ---------------------------
+# Coverage directory from testing
+coverage/
+# React testing outputs
+jest-cache/
+jest-test-results.json
+# Vite / CRA
+.vite/
+vite.config.ts.timestamp-*
+.vite-deps/
+.vite-plugin-*
+# Storybook
+storybook-static/
+out-tsc/
+
+# ---------------------------
+# Backend (Express + JS/TS)
+# ---------------------------
+# Compiled output
+lib/
+tsbuildinfo.tsbuildinfo
+*.tsbuildinfo
+
+# PM2 logs
+.pm2/
+
+# ---------------------------
+# IDE / Editor
+# ---------------------------
+.vscode/
+.idea/
+*.swp
+*.swo
+*.iml
+
+# ---------------------------
+# Misc
+# ---------------------------
+*.tgz
+*.gz
+*.zip
