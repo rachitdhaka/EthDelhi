@@ -8,6 +8,7 @@ import { LendPage } from './pages/LendPage';
 import { DashboardPage } from './pages/DashboardPage';
 import {Rwa} from './pages/Rwa';
 import { Landing } from './pages/Landing';
+// import { Landing } from './pages/Landing';
 
 export function App() {
   return (
@@ -16,11 +17,11 @@ export function App() {
         <Header />
         <main className="flex-grow">
           <Routes>
-            <Route path="/" element={<HomePage />} />
+            <Route path="/" element={<Landing />} />
             <Route path="/borrow" element={<BorrowPage />} />
             <Route path="/lend" element={<LendPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/Landing" element={<Landing />} />
+            {/* <Route path="/Landing" element={<Landing />} /> */}
             <Route path='/register-asset' element={<Rwa/>}/>
           </Routes>
         </main>
