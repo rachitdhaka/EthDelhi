@@ -95,7 +95,7 @@ export function Header() {
       // If the user disconnects, reset the sign-in attempt flag
       signInAttemptedRef.current = false;
       // Optional: You might want to clear the auth token on disconnect
-      // localStorage.removeItem('authToken');
+      localStorage.removeItem('authToken');
     }
   }, [isConnected, address, signMessageAsync, navigate, location.pathname]);
 

@@ -92,11 +92,18 @@ export function Rwa() {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
-  const handleAssetTypeSelect = (assetTypeId: string) => setFormData({ ...formData, assetType: assetTypeId });
+  const handleAssetTypeSelect = (assetType: string) => setFormData({ ...formData, assetType: assetType });
   const handleTokenStandardSelect = (tokenStandardId: string) => setFormData({ ...formData, tokenStandard: tokenStandardId });
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || []) as File[];
     setFormData({ ...formData, documents: [...formData.documents, ...files] });
+
+    await fetch("http://localhost:3000/api/rwa/upload", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${localStorage.getItem('authToken')}`},
+        body: JSON.stringify({ assetId: formData.assetType, assetType: formData.assetName}),
+    });
+
   };
   const handleRemoveFile = (index: number) => {
     const updatedFiles = [...formData.documents];
@@ -105,7 +112,7 @@ export function Rwa() {
   };
   const handleNextStep = () => setCurrentStep((prev) => prev + 1);
   const handlePrevStep = () => setCurrentStep((prev) => prev - 1);
-  
+
   // Mock async handlers
   const handleUploadToIpfs = () => {
     setIsUploading(true);
@@ -116,7 +123,7 @@ export function Rwa() {
       if (progress >= 100) {
         clearInterval(interval);
         setIsUploading(false);
-        setFormData({ ...formData, ipfsHash: 'QmZ9Uks7gVCpRSHzbstBPJdBU7VV6QaGRZBDHJAhM9Ltwm' });
+        setFormData({ ...formData, ipfsHash: 'updated' });
       }
     }, 300);
   };
@@ -161,12 +168,12 @@ export function Rwa() {
       (props: React.SVGProps<SVGSVGElement>) => <svg width={32} height={44} viewBox="0 0 60 80" fill="none" {...props}><polygon points="30,10 55,40 30,70 5,40" stroke="#18181b" strokeWidth="4" fill="none" /><polygon points="30,10 30,70 55,40" stroke="#18181b" strokeWidth="2.5" fill="none" /></svg>,
       (props: React.SVGProps<SVGSVGElement>) => <svg width={32} height={40} viewBox="0 0 60 80" fill="none" {...props}><rect x="15" y="35" width="30" height="30" rx="8" stroke="#18181b" strokeWidth="4" fill="none" /><ellipse cx="30" cy="35" rx="16" ry="14" stroke="#18181b" strokeWidth="3" fill="none" /><circle cx="30" cy="55" r="5" fill="#18181b" /></svg>,
     ];
-    
+
     const doodleStyle = (baseX: number, baseY: number, dx: number, dy: number, scale = 1.3, opacity = 0.28, rotate = 0): React.CSSProperties => ({
       transform: `translate3d(${baseX + dx * (mouse.x - 0.5)}px,${baseY + dy * (mouse.y - 0.5)}px,0) scale(${scale}) rotate(${rotate}deg)`,
       position: 'fixed', pointerEvents: 'none', zIndex: 0, opacity, transition: 'transform 0.1s linear'
     });
-    
+
     const elements = [];
     const vw = window.innerWidth || 1200;
     const vh = window.innerHeight || 800;
@@ -192,7 +199,6 @@ export function Rwa() {
   const steps = [
     { id: 'asset-details', name: 'Asset Details' },
     { id: 'document-upload', name: 'Documents' },
-    { id: 'compliance', name: 'Compliance' },
     { id: 'tokenization', name: 'Tokenize' }
   ];
 
@@ -242,13 +248,13 @@ export function Rwa() {
                 <label className="block text-sm font-bold text-gray-800 mb-2">Asset Type</label>
                 <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                   {assetTypes.map(type => (
-                    <div key={type.id} onClick={() => handleAssetTypeSelect(type.id)} className={`relative rounded-lg border-2 p-4 cursor-pointer flex items-center transition-all ${formData.assetType === type.id ? 'border-blue-600 bg-blue-50 shadow-md' : 'border-gray-300 hover:border-gray-400'}`}>
+                    <div key={type.id} onClick={() => handleAssetTypeSelect(type.name)} className={`relative rounded-lg border-2 p-4 cursor-pointer flex items-center transition-all ${formData.assetType === type.name ? 'border-blue-600 bg-blue-50 shadow-md' : 'border-gray-300 hover:border-gray-400'}`}>
                       <div className="flex-shrink-0 flex items-center justify-center h-10 w-10 rounded-md bg-gray-200 text-black"><span className="text-xl">{type.icon}</span></div>
                       <div className="ml-4 flex-1">
                         <h3 className="text-sm font-bold text-gray-900">{type.name}</h3>
                         <p className="mt-1 text-sm text-gray-600">{type.description}</p>
                       </div>
-                      {formData.assetType === type.id && <div className="absolute top-2 right-2"><CircleCheck className="h-5 w-5 text-blue-600" /></div>}
+                      {formData.assetType === type.name && <div className="absolute top-2 right-2"><CircleCheck className="h-5 w-5 text-blue-600" /></div>}
                     </div>
                   ))}
                 </div>
@@ -256,18 +262,18 @@ export function Rwa() {
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
                 <div>
                   <label htmlFor="assetName" className="block text-sm font-bold text-gray-800">Asset Name</label>
-                  <input type="text" name="assetName" id="assetName" value={formData.assetName} onChange={handleInputChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" placeholder="e.g., Downtown Office Building"/>
+                  <input type="text" name="assetName" id="assetName" value={formData.assetName} onChange={handleInputChange} className="p-2 mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" placeholder="e.g., Downtown Office Building"/>
                 </div>
                 <div>
                   <label htmlFor="assetValue" className="block text-sm font-bold text-gray-800">Estimated Value (USD)</label>
                   <div className="relative mt-1">
                     <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3"><span className="text-gray-500 sm:text-sm">$</span></div>
-                    <input type="number" name="assetValue" id="assetValue" value={formData.assetValue} onChange={handleInputChange} className="block w-full rounded-md border-gray-300 pl-7 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" placeholder="500,000"/>
+                    <input type="number" name="assetValue" id="assetValue" value={formData.assetValue} onChange={handleInputChange} className="p-2 block w-full rounded-md border-gray-300 pl-7 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" placeholder="500,000"/>
                   </div>
                 </div>
                 <div className="sm:col-span-2">
                   <label htmlFor="legalOwner" className="block text-sm font-bold text-gray-800">Legal Owner</label>
-                  <input type="text" name="legalOwner" id="legalOwner" value={formData.legalOwner} onChange={handleInputChange} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" placeholder="e.g., ABC Properties LLC"/>
+                  <input type="text" name="legalOwner" id="legalOwner" value={formData.legalOwner} onChange={handleInputChange} className="p-2 mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm" placeholder="e.g., ABC Properties LLC"/>
                 </div>
               </div>
               <div>
@@ -320,14 +326,14 @@ export function Rwa() {
                         </button>
                     </div>
                 )}
-                
+
                 {formData.ipfsHash && (
                     <div className="rounded-md bg-green-50 p-4">
                         <div className="flex">
                             <div className="flex-shrink-0"><CircleCheck className="h-5 w-5 text-green-500" /></div>
                             <div className="ml-3">
                                 <h3 className="text-sm font-medium text-green-800">Documents Uploaded Successfully</h3>
-                                <div className="mt-2 text-sm text-green-700"><p className="font-mono text-xs break-all">IPFS Hash: {formData.ipfsHash}</p></div>
+                                {/* <div className="mt-2 text-sm text-green-700"><p className="font-mono text-xs break-all">IPFS Hash: {formData.ipfsHash}</p></div> */}
                             </div>
                         </div>
                     </div>
@@ -349,7 +355,7 @@ export function Rwa() {
                 <div className={`rounded-lg border-2 p-6 text-center ${formData.isIdentityVerified ? 'border-green-500 bg-green-50' : 'border-gray-300'}`}>
                     <h3 className="text-lg font-bold text-gray-900">Identity Verification (KYC)</h3>
                     <p className="mt-2 text-sm text-gray-600">Verify your identity using our secure provider. This typically takes 2-5 minutes.</p>
-                    {formData.isIdentityVerified ? 
+                    {formData.isIdentityVerified ?
                         <div className="mt-4 text-sm font-semibold text-green-700 inline-flex items-center">
                             <CircleCheck className="h-5 w-5 mr-2" /> Verified
                         </div> :
@@ -367,11 +373,11 @@ export function Rwa() {
                   <h3 className="text-xl font-bold text-gray-900">Review and Mint Your Token</h3>
                   <p className="mt-2 text-sm text-gray-600">You're ready to mint! This creates an on-chain representation of your asset.</p>
                 </div>
-                
+
                 {/* --- Asset Summary --- */}
                 <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
                   <dl className="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2">
-                    <div className="sm:col-span-1"><dt className="text-sm font-medium text-gray-500">Asset Name</dt><dd className="mt-1 text-sm font-semibold text-gray-900">{formData.assetName}</dd></div>
+                    <div className="sm:col-span-1"><dt className="text-sm font-medium  text-gray-500">Asset Name</dt><dd className="mt-1 p-2 text-sm font-semibold text-gray-900">{formData.assetName}</dd></div>
                     <div className="sm:col-span-1"><dt className="text-sm font-medium text-gray-500">Asset Value</dt><dd className="mt-1 text-sm font-semibold text-gray-900">${formData.assetValue}</dd></div>
                     <div className="sm:col-span-1"><dt className="text-sm font-medium text-gray-500">Legal Owner</dt><dd className="mt-1 text-sm font-semibold text-gray-900">{formData.legalOwner}</dd></div>
                     <div className="sm:col-span-1"><dt className="text-sm font-medium text-gray-500">Token Standard</dt><dd className="mt-1 text-sm font-semibold text-gray-900">{tokenStandards.find(s => s.id === formData.tokenStandard)?.name}</dd></div>
@@ -399,7 +405,7 @@ export function Rwa() {
             </div>
           )}
         </div>
-        
+
         {/* --- Navigation --- */}
         <div className="mt-8 flex justify-between">
             <button type="button" onClick={handlePrevStep} disabled={currentStep === 0} className="inline-flex items-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50">

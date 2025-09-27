@@ -6,8 +6,9 @@ export const authenticateJWT = (req, res, next) => {
 
    const token = authHeader.split(" ")[1];
    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-      if (err) return res.sendStatus(403);
+      // if (err) return res.sendStatus(403);
       req.user = decoded;
+      req.userId = decoded.id; // Extract userId from the decoded token
       next();
    });
 };

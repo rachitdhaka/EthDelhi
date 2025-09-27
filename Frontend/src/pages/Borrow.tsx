@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { CheckCircleIcon, AlertCircleIcon, ArrowRightIcon, UploadIcon } from 'lucide-react';
 
 // --- Constants ---
@@ -36,6 +36,55 @@ export function BorrowPage() {
     const [isDocumentUploaded, setIsDocumentUploaded] = useState(false);
     const [isVerified, setIsVerified] = useState(false);
     const [mouse, setMouse] = useState({ x: 0.5, y: 0.5 }); // State for parallax effect
+	const [rwaOptionArray, setRwaOptionArray] = useState<any[]>(rwaOptions);
+
+	useEffect(() => {
+		const fetchUploadedRwa = async () => {
+			try {
+				const response = await fetch("http://localhost:3000/api/rwa/get", {
+					method: "GET",
+					headers: {
+						"Content-Type": "application/json",
+						"Authorization": `Bearer ${localStorage.getItem('authToken')}`
+					},
+				});
+
+				const res = await response.json();
+
+
+					// Filter and include rwaOptions that match backend assetTypes
+					const matchingRwaOptions = rwaOptions.filter(option =>
+						res.documents.some((doc: any) => doc.assetType === option.id)
+					);
+
+					// Transform backend data to match rwaOptions structure for matching assets
+					const transformedRwaOptions = res.documents
+						.filter((doc: any) => rwaOptions.some(option => option.id === doc.assetType))
+						.map((doc: any) => {
+							// Find the matching rwaOption to use its properties
+							const matchingOption = rwaOptions.find(option => option.id === doc.assetType);
+							return {
+								id: doc.assetId || doc.id,
+								name: matchingOption?.name || doc.assetType || 'Unknown Asset',
+								description: matchingOption?.description || doc.metadata?.description || `Tokenized ${doc.assetType} asset`,
+								image: matchingOption?.image || doc.metadata?.image || 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?ixlib=rb-4.0.3&auto=format&fit=crop&w=300&q=80',
+								value: doc.valuation || matchingOption?.value || 100000,
+								maxLTV: doc.metadata?.maxLTV || matchingOption?.maxLTV || 0.7
+							};
+						});
+
+					// Set the state with filtered matching options and transformed backend data
+					setRwaOptionArray([...matchingRwaOptions, ...transformedRwaOptions]);
+
+			} catch (error) {
+				console.error('Failed to fetch RWA data:', error);
+				// Fallback to default options on error
+				setRwaOptionArray(rwaOptions);
+			}
+		};
+
+		fetchUploadedRwa();
+	}, []);
 
     // --- Event Handlers ---
     const handleAssetSelect = (asset: typeof rwaOptions[0]) => {
@@ -110,7 +159,7 @@ export function BorrowPage() {
                     {/* Column 1: Asset Selection */}
                     <div className="bg-white/80 backdrop-blur-sm shadow-xl rounded-2xl overflow-hidden border border-gray-200 p-6 space-y-4">
                         <h2 className="text-lg font-bold text-gray-900">1. Select Collateral</h2>
-                        {rwaOptions.map(asset => (
+                        {rwaOptionArray.map(asset => (
                             <div key={asset.id} onClick={() => handleAssetSelect(asset)} className={`relative rounded-lg border-2 p-4 cursor-pointer flex items-start transition-all duration-200 ${selectedAsset.id === asset.id ? 'border-blue-600 bg-blue-50 shadow-md' : 'border-gray-300 hover:border-gray-400'}`}>
                                 <img src={asset.image} alt={asset.name} className="h-16 w-16 rounded-md object-cover" />
                                 <div className="ml-4">
@@ -159,14 +208,14 @@ export function BorrowPage() {
                                     Upload Verification Docs
                                 </button>
                                 <div className="mt-4 flex items-center">
-                                    {isDocumentUploaded ? 
-                                        <><CheckCircleIcon className="h-5 w-5 text-green-600" /><span className="ml-2 text-sm text-green-700">Documents uploaded</span></> : 
+                                    {isDocumentUploaded ?
+                                        <><CheckCircleIcon className="h-5 w-5 text-green-600" /><span className="ml-2 text-sm text-green-700">Documents uploaded</span></> :
                                         <><AlertCircleIcon className="h-5 w-5 text-gray-400" /><span className="ml-2 text-sm text-gray-500">No documents uploaded</span></>
                                     }
                                 </div>
                                 <div className={`mt-2 flex items-center`}>
-                                    {isVerified ? 
-                                        <div className="flex items-center px-3 py-1 rounded-full bg-green-100 text-green-800"><CheckCircleIcon className="h-4 w-4 mr-1" /><span className="text-xs font-medium">Verified & Compliant</span></div> : 
+                                    {isVerified ?
+                                        <div className="flex items-center px-3 py-1 rounded-full bg-green-100 text-green-800"><CheckCircleIcon className="h-4 w-4 mr-1" /><span className="text-xs font-medium">Verified & Compliant</span></div> :
                                         <div className="flex items-center px-3 py-1 rounded-full bg-gray-100 text-gray-600"><span className="text-xs font-medium">Pending Verification</span></div>
                                     }
                                 </div>
