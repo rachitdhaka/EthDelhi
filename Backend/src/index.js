@@ -2,11 +2,14 @@ import dotenv from "dotenv";
 dotenv.config();
 
 import express from "express";
+import cors from "cors";
 import mongoose from 'mongoose';
 import routes from "./routes/apiRoutes.js";
 
 const app = express();
 
+// Enable CORS for all routes
+app.use(cors());
 app.use(express.json());
 app.use("/api", routes);
 
