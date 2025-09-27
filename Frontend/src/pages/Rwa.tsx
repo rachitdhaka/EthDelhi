@@ -52,7 +52,7 @@ const tokenStandards = [{
   name: 'ERC-20',
   description: 'Fungible token for fractionalized ownership'
 }];
-export function RwaRegistrationPage() {
+export function Rwa() {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState({
     assetType: '',
@@ -185,7 +185,8 @@ export function RwaRegistrationPage() {
         return false;
     }
   };
-  return <div className="bg-[#000000] min-h-screen">
+  return (
+    <div className="bg-[#000000] min-h-screen">
       <div className="max-w-7xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <h1 className="text-3xl font-extrabold text-white sm:text-4xl">
@@ -203,7 +204,7 @@ export function RwaRegistrationPage() {
                 {stepIdx !== steps.length - 1 && <div className="absolute top-4 left-4 -ml-px mt-0.5 h-0.5 w-full sm:w-full bg-gray-700" aria-hidden="true" />}
                 <div className={`relative flex items-center ${stepIdx < currentStep ? 'group' : ''}`}>
                   <span className="h-9 flex items-center">
-                    <span className={`relative z-10 w-8 h-8 flex items-center justify-center rounded-full ${stepIdx < currentStep ? 'bg-white text-black' : stepIdx === currentStep ? 'bg-white text-black' : 'bg-blue-700 text-gray-400'}`}>
+                    <span className={`relative z-10 w-8 h-8 flex items-center justify-center rounded-full ${stepIdx < currentStep ? 'bg-white text-black' : stepIdx === currentStep ? 'bg-white text-black' : 'bg-gray-700 text-gray-400'}`}>
                       {stepIdx < currentStep ? <CheckCircleIcon className="w-5 h-5" aria-hidden="true" /> : <span>{stepIdx + 1}</span>}
                     </span>
                   </span>
@@ -728,5 +729,6 @@ export function RwaRegistrationPage() {
           </div>
         </div>
       </div>
-    </div>;
+    </div>
+  );
 }

@@ -34,16 +34,18 @@ export function LendPage() {
     return (yearlyYield * days / 365).toFixed(2);
   };
   const estimatedYield = calculateYield();
-  return <div className="max-w-7xl mx-auto px-4 py-12 sm:px-6 lg:px-8 bg-[#000000] text-[#ffffff]">
-    <div className="text-center mb-12">
-      <h1 className="text-3xl font-extrabold text-[#ffffff] sm:text-4xl">
-        Lend Stablecoins and Earn Yield
-      </h1>
-      <p className="mt-4 text-xl text-[#202124]">
-        Provide liquidity to the Integra protocol and earn stable returns
-      </p>
-    </div>
-    <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+  return (
+    <div className="min-h-screen w-full bg-[#000000] text-[#ffffff] py-12">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-12">
+          <h1 className="text-3xl font-extrabold text-[#ffffff] sm:text-4xl">
+            Lend Stablecoins and Earn Yield
+          </h1>
+          <p className="mt-4 text-xl text-gray-400">
+            Provide liquidity to the Integra protocol and earn stable returns
+          </p>
+        </div>
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
       {/* Lending Pool Dashboard */}
       <div className="bg-[#202124] shadow overflow-hidden rounded-lg">
         <div className="px-4 py-5 sm:px-6">
@@ -122,11 +124,11 @@ export function LendPage() {
                 </label>
                 <div className="mt-1 relative rounded-md shadow-sm">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <span className="text-[#202124] sm:text-sm">$</span>
+                    <span className="text-gray-400 sm:text-sm">$</span>
                   </div>
                   <input type="text" name="amount" id="amount" value={amount} onChange={e => setAmount(e.target.value)} className="focus:ring-[#ffffff] focus:border-[#ffffff] block w-full pl-7 pr-12 sm:text-sm border-[#202124] rounded-md text-[#000000]" placeholder="0.00" />
                   <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                    <span className="text-[#202124] sm:text-sm" id="price-currency">
+                    <span className="text-gray-400 sm:text-sm" id="price-currency">
                       {selectedPool.name}
                     </span>
                   </div>
@@ -179,6 +181,8 @@ export function LendPage() {
           </div>
         </div>
       </div>
+        </div>
+      </div>
     </div>
-  </div>;
+  );
 }

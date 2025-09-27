@@ -23,32 +23,34 @@ const rwaOptions = [{
   maxLTV: 0.6
 }];
 export function BorrowPage() {
-  const [selectedAsset, setSelectedAsset] = useState(rwaOptions[0]);
-  const [borrowAmount, setBorrowAmount] = useState('');
-  const [isDocumentUploaded, setIsDocumentUploaded] = useState(false);
-  const [isVerified, setIsVerified] = useState(false);
-  const handleAssetSelect = (asset : any) => {
-    setSelectedAsset(asset);
-    setBorrowAmount('');
-    setIsDocumentUploaded(false);
-    setIsVerified(false);
-  };
-  const handleDocumentUpload = () => {
-    setIsDocumentUploaded(true);
-    // Simulate verification process
-    setTimeout(() => {
-      setIsVerified(true);
-    }, 1500);
-  };
-  const calculateLTV = () => {
-    if (!borrowAmount || isNaN(parseFloat(borrowAmount))) return 0;
-    return parseFloat(borrowAmount) / selectedAsset.value * 100;
-  };
-  const ltv = calculateLTV();
-  const isLTVSafe = ltv <= selectedAsset.maxLTV * 100;
-  const maxBorrowAmount = selectedAsset.value * selectedAsset.maxLTV;
-  return <div className="min-h-screen bg-[#000000] text-[#ffffff] max-w-7xl mx-auto px-4 py-12 sm:px-6 lg:px-8">
-      <div className="text-center mb-12">
+	const [selectedAsset, setSelectedAsset] = useState(rwaOptions[0]);
+	const [borrowAmount, setBorrowAmount] = useState('');
+	const [isDocumentUploaded, setIsDocumentUploaded] = useState(false);
+	const [isVerified, setIsVerified] = useState(false);
+	const handleAssetSelect = (asset : any) => {
+		setSelectedAsset(asset);
+		setBorrowAmount('');
+		setIsDocumentUploaded(false);
+		setIsVerified(false);
+	};
+	const handleDocumentUpload = () => {
+		setIsDocumentUploaded(true);
+		// Simulate verification process
+		setTimeout(() => {
+			setIsVerified(true);
+		}, 1500);
+	};
+	const calculateLTV = () => {
+		if (!borrowAmount || isNaN(parseFloat(borrowAmount))) return 0;
+		return parseFloat(borrowAmount) / selectedAsset.value * 100;
+	};
+	const ltv = calculateLTV();
+	const isLTVSafe = ltv <= selectedAsset.maxLTV * 100;
+	const maxBorrowAmount = selectedAsset.value * selectedAsset.maxLTV;
+	return (
+		<div className="min-h-screen w-full bg-[#000000] text-[#ffffff] py-12">
+			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+				<div className="text-center mb-12">
         <h1 className="text-3xl font-extrabold text-white sm:text-4xl">
           Borrow Against Your Real-World Assets
         </h1>
@@ -222,6 +224,8 @@ export function BorrowPage() {
             </div>
           </div>
         </div>
-      </div>
-    </div>;
+			</div>
+			</div>
+		</div>
+	);
 }
