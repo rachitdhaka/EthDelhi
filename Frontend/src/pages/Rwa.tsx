@@ -144,7 +144,10 @@ export function Rwa() {
           console.log('✅ Files uploaded to IPFS:', result.ipfs);
           
           const gatewayUrl = result.ipfs.gateway || `https://ipfs.io/ipfs/${result.ipfs.cid}`;
-          alert(`Files uploaded successfully!\nIPFS Hash: ${result.ipfs.cid}\nGateway: ${gatewayUrl}`);
+          const filecoinUrl = result.ipfs.filecoin?.explorerUrl || 'Not available';
+          const filecoinIpfsUrl = result.ipfs.filecoin?.ipfsUrl || 'Not available';
+          
+          alert(`Files uploaded successfully!\n\nIPFS Hash: ${result.ipfs.cid}\nIPFS Gateway: ${gatewayUrl}\nFilecoin Deal: ${filecoinUrl}\nFilecoin IPFS: ${filecoinIpfsUrl}`);
         } else {
           console.error('❌ No IPFS hash in response:', result);
           alert('Upload failed: No IPFS hash generated. Please try again.');
@@ -434,6 +437,7 @@ export function Rwa() {
       networkHeight={formData.filecoinDeal?.networkHeight}
       status={formData.filecoinDeal?.status}
       explorerUrl={formData.filecoinDeal?.explorerUrl}
+      realCid={formData.ipfsHash}
     />
 
                 {formData.documents.length > 0 && !formData.ipfsHash && (
@@ -542,7 +546,7 @@ export function Rwa() {
                     Next <ChevronRightIcon className="ml-2 h-5 w-5" />
                 </button>
              ) : (
-                <Link to="/dashboard" className="inline-flex items-center rounded-md border border-transparent bg-black px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-800">
+                <Link to="/dashboard" className="inline-flex items-center rounded-md border border-transparent bg-black px-6 py-2 text-sm font-medium text-white shadow-sm hover:bg-gray-800">
                     Go to Dashboard <ChevronRightIcon className="ml-2 h-5 w-5" />
                 </Link>
              )}

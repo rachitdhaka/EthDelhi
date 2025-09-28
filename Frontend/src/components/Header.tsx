@@ -127,7 +127,7 @@ export function Header() {
         <div className="h-16 flex items-center justify-between">
           <div className="flex items-center space-x-8">
             <Link to="/" className="text-xl font-semibold text-blue-700">
-              Integra
+              AssetForge
             </Link>
             <nav className="hidden md:flex items-center space-x-6">
               {NAV_ITEMS.map(renderNavLink)}

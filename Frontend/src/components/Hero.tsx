@@ -5,7 +5,7 @@ export function Hero() {
   return <div className="py-32 flex flex-col items-center text-center">
       <h1 className="text-5xl md:text-7xl font-semibold max-w-4xl mx-auto leading-tight">
         Unleash the power of <br />
-        RWA using OsamaBoom
+        RWA using AssetForge
       </h1>
 
       <div className="mt-12 flex flex-col items-center space-y-8">

@@ -88,12 +88,16 @@ export const uploadDocuments = async (req, res) => {
 
       // Store on Filecoin Calibration Testnet for warm storage
       let filecoinDeal = null;
-      if (documentCID && documentHash) {
+      if (documentCID && documentHash && req.files && req.files.length > 0) {
          try {
+            console.log(`📤 Storing ${req.files.length} files on Filecoin Calibration Testnet...`);
             filecoinDeal = await filecoinService.storeRWADocuments(req.files, {
                cid: documentCID,
                hash: documentHash,
-               type: 'rwa-document'
+               type: 'rwa-document',
+               fileName: req.files[0].originalname,
+               fileSize: req.files[0].size,
+               uploadTime: new Date().toISOString()
             });
             console.log('✅ Filecoin warm storage completed:', filecoinDeal);
          } catch (filecoinError) {
@@ -111,7 +115,14 @@ export const uploadDocuments = async (req, res) => {
             files: ipfsResults,
             gateway: ipfsResults[0]?.gateway || `https://ipfs.io/ipfs/${documentCID}`,
             filecoin: filecoinDeal,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
+            // Additional URLs for better accessibility
+            urls: {
+               ipfs: `https://ipfs.io/ipfs/${documentCID}`,
+               pinata: `https://gateway.pinata.cloud/ipfs/${documentCID}`,
+               filecoin: filecoinDeal?.explorerUrl || null,
+               filecoinIpfs: filecoinDeal?.ipfsUrl || null
+            }
          }
       });
    } catch (err) {
@@ -464,5 +475,26 @@ export const getCalibrationNetworkInfo = async (req, res) => {
    } catch (error) {
       console.error("Error getting Calibration network info:", error);
       res.status(500).json({ error: "Failed to get network info" });
+   }
+};
+
+// Get active storage deals for a CID
+export const getActiveStorageDeals = async (req, res) => {
+   try {
+      const { cid } = req.params;
+      if (!cid) {
+         return res.status(400).json({ error: 'CID parameter is required' });
+      }
+
+      const deals = await filecoinService.getActiveStorageDeals(cid);
+      res.json({
+         success: true,
+         deals: deals,
+         count: deals.length,
+         cid: cid
+      });
+   } catch (error) {
+      console.error('Error getting active storage deals:', error);
+      res.status(500).json({ error: 'Failed to get storage deals', details: error.message });
    }
 };

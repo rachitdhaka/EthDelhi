@@ -27,7 +27,8 @@ import {
   getRWAAssetPrice,
   storeRWADocuments,
   getStorageDealStatus,
-  getCalibrationNetworkInfo
+  getCalibrationNetworkInfo,
+  getActiveStorageDeals
 } from "../controllers/rwaController.js";
 import { mintToken, getUserTokens } from "../controllers/tokenController.js";
 import { borrowFunds, repayFunds, getMyLoans } from "../controllers/borrowController.js";
@@ -92,6 +93,7 @@ router.get("/filecoin/rwa-price", getRWAAssetPrice);
 router.get("/calibration/network", getCalibrationNetworkInfo);
 router.post("/calibration/store-documents", storeRWADocuments);
 router.get("/calibration/deal-status/:dealId", getStorageDealStatus);
+router.get("/calibration/storage-deals/:cid", getActiveStorageDeals);
 
 // Tokens
 router.post("/token/mint", authenticateJWT, mintToken);
