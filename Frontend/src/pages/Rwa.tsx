@@ -6,16 +6,24 @@ import {
   UploadIcon,
   ShieldIcon,
   CoinsIcon,
-  AlertCircleIcon,
 } from 'lucide-react';
+import { useIdentityRegistry, useDocumentVault, useRWAToken } from '../hooks/useContracts';
+import { useAccount } from 'wagmi';
+import { ASSET_TYPES } from '../config/contracts';
+import { FilecoinStatus } from '../components/FilecoinStatus';
 
 // --- Constants (Asset types, token standards, etc.) ---
-const assetTypes = [
-  { id: 'real-estate', name: 'Real Estate', description: 'Commercial or residential property', icon: '🏢' },
-  { id: 'invoice', name: 'Invoice', description: 'Accounts receivable or factoring', icon: '📄' },
-  { id: 'carbon-credits', name: 'Carbon Credits', description: 'Verified carbon offset credits', icon: '🌿' },
-  { id: 'commodities', name: 'Commodities', description: 'Physical goods like gold or oil', icon: '🪙' },
-];
+const assetTypes = ASSET_TYPES.map(asset => ({
+  id: asset.id,
+  name: asset.name,
+  description: asset.isPyth ? `Real-time price feed via Pyth Oracle` : `Custom asset with ASI price feed`,
+  icon: asset.id === 'real-estate' ? '🏢' : 
+        asset.id === 'invoice' ? '📄' : 
+        asset.id === 'carbon-credits' ? '🌿' : 
+        asset.id === 'commodities' ? '🪙' : '📈',
+  symbol: asset.symbol,
+  isPyth: asset.isPyth
+}));
 
 const tokenStandards = [
   { id: 'erc721', name: 'ERC-721 (NFT)', description: 'Non-fungible token for unique assets' },
@@ -64,6 +72,12 @@ function Spinner() {
 }
 
 export function Rwa() {
+  // --- Web3 Hooks ---
+  const { address, isConnected } = useAccount();
+  const { isVerified, verifyUser, isPending: isVerifying, isConfirmed: isIdentityVerified } = useIdentityRegistry();
+  const { storeDocument, isPending: isUploading, isConfirmed: isDocumentStored } = useDocumentVault();
+  const { mint, isPending: isMinting, isConfirmed: isTokenMinted } = useRWAToken();
+
   // --- Component State ---
   const [currentStep, setCurrentStep] = useState(0);
   const [mouse, setMouse] = useState({ x: 0.5, y: 0.5 }); // normalized 0-1
@@ -80,12 +94,9 @@ export function Rwa() {
     isIdentityVerified: false,
     isComplianceVerified: false,
     txHash: '',
+    filecoinDeal: null as any,
   });
 
-  const [isUploading, setIsUploading] = useState(false);
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [isMinting, setIsMinting] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
 
   // --- Handlers ---
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -98,12 +109,51 @@ export function Rwa() {
     const files = Array.from(e.target.files || []) as File[];
     setFormData({ ...formData, documents: [...formData.documents, ...files] });
 
-    await fetch("http://localhost:3000/api/rwa/upload", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${localStorage.getItem('authToken')}`},
-        body: JSON.stringify({ assetId: formData.assetType, assetType: formData.assetName}),
-    });
+    // Upload files to IPFS via backend
+    if (files.length > 0) {
+      try {
+        const uploadFormData = new FormData();
+        files.forEach(file => {
+          uploadFormData.append('documents', file);
+        });
+        uploadFormData.append('assetId', formData.assetType);
+        uploadFormData.append('assetType', formData.assetName);
+        uploadFormData.append('userAddress', address || '');
 
+        console.log('📤 Uploading files to IPFS...', files.map(f => f.name));
+
+        const response = await fetch("http://localhost:3000/api/rwa/upload", {
+        method: "POST",
+          headers: { "Authorization": `Bearer ${localStorage.getItem('authToken')}` },
+          body: uploadFormData
+        });
+
+        if (!response.ok) {
+          throw new Error(`Upload failed: ${response.status} ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        console.log('📥 Upload response:', result);
+
+        if (result.ipfs && result.ipfs.cid) {
+          setFormData(prev => ({ 
+            ...prev, 
+            ipfsHash: result.ipfs.cid,
+            filecoinDeal: result.ipfs.filecoin || null
+          }));
+          console.log('✅ Files uploaded to IPFS:', result.ipfs);
+          
+          const gatewayUrl = result.ipfs.gateway || `https://ipfs.io/ipfs/${result.ipfs.cid}`;
+          alert(`Files uploaded successfully!\nIPFS Hash: ${result.ipfs.cid}\nGateway: ${gatewayUrl}`);
+        } else {
+          console.error('❌ No IPFS hash in response:', result);
+          alert('Upload failed: No IPFS hash generated. Please try again.');
+        }
+      } catch (error) {
+        console.error('❌ IPFS upload failed:', error);
+        alert('Upload failed. Please try again.');
+      }
+    }
   };
   const handleRemoveFile = (index: number) => {
     const updatedFiles = [...formData.documents];
@@ -113,40 +163,67 @@ export function Rwa() {
   const handleNextStep = () => setCurrentStep((prev) => prev + 1);
   const handlePrevStep = () => setCurrentStep((prev) => prev - 1);
 
-  // Mock async handlers
-  const handleUploadToIpfs = () => {
-    setIsUploading(true);
-    let progress = 0;
-    const interval = setInterval(() => {
-      progress += 10;
-      setUploadProgress(progress);
-      if (progress >= 100) {
-        clearInterval(interval);
-        setIsUploading(false);
-        setFormData({ ...formData, ipfsHash: 'updated' });
-      }
-    }, 300);
+  // Smart contract handlers
+  const handleUploadToIpfs = async () => {
+    if (!isConnected || !address) {
+      alert('Please connect your wallet first');
+      return;
+    }
+
+    if (!formData.ipfsHash) {
+      alert('Please upload documents first to get IPFS hash. Click "Choose Files" to upload your documents.');
+      return;
+    }
+
+    try {
+      // Use the real IPFS hash from file upload
+      const docHash = `0x${Math.random().toString(16).substring(2, 66)}`; // Generate hash for demo
+      
+      // Store document on-chain
+      await storeDocument(formData.ipfsHash, docHash);
+      console.log('✅ Document stored on-chain');
+      alert('Document stored on-chain successfully!');
+    } catch (error) {
+      console.error('Error storing document on-chain:', error);
+      alert('Failed to store document on-chain');
+    }
   };
-  const handleVerifyIdentity = () => {
-    setIsVerifying(true);
-    setTimeout(() => {
-      setIsVerifying(false);
-      setFormData({ ...formData, isIdentityVerified: true });
-    }, 2000);
+
+  const handleVerifyIdentity = async () => {
+    if (!isConnected || !address) {
+      alert('Please connect your wallet first');
+      return;
+    }
+
+    try {
+      await verifyUser();
+    } catch (error) {
+      console.error('Error verifying identity:', error);
+      alert('Failed to verify identity');
+    }
   };
-  const handleMintToken = () => {
-    setIsMinting(true);
-    setTimeout(() => {
-      setIsMinting(false);
-      setFormData({ ...formData, txHash: '0x3a4e8b6d7c9f0e1d2b3a4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b' });
-    }, 3000);
+
+  const handleMintToken = async () => {
+    if (!isConnected || !address) {
+      alert('Please connect your wallet first');
+      return;
+    }
+
+    try {
+      // Mint RWA token for the user
+      await mint(address, formData.assetValue);
+      setFormData({ ...formData, txHash: 'Transaction submitted' });
+    } catch (error) {
+      console.error('Error minting token:', error);
+      alert('Failed to mint token');
+    }
   };
 
   const isStepComplete = () => {
     switch (currentStep) {
       case 0: return !!(formData.assetType && formData.assetName && formData.assetValue && formData.legalOwner && formData.tokenStandard);
-      case 1: return formData.documents.length > 0 && !!formData.ipfsHash;
-      case 2: return formData.isIdentityVerified;
+      case 1: return formData.documents.length > 0 && (isDocumentStored || !!formData.ipfsHash);
+      case 2: return isIdentityVerified || isVerified;
       case 3: return true;
       default: return false;
     }
@@ -210,6 +287,11 @@ export function Rwa() {
         <div className="text-center mb-12">
           <h1 className="text-4xl font-extrabold text-black tracking-tight">Register Your Asset</h1>
           <p className="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">Follow the steps to tokenize your asset and access DeFi liquidity.</p>
+          {!isConnected && (
+            <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <p className="text-yellow-800">Please connect your wallet to continue with asset registration.</p>
+            </div>
+          )}
         </div>
 
         {/* --- Progress Steps --- */}
@@ -319,6 +401,50 @@ export function Rwa() {
                     </div>
                 )}
 
+    {formData.ipfsHash && (
+      <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-md">
+        <p className="text-sm font-medium text-green-800">✅ IPFS Hash Generated</p>
+        <p className="text-xs text-green-600 mt-1 font-mono break-all">
+          {formData.ipfsHash}
+        </p>
+        <div className="mt-2 space-y-1">
+          <a 
+            href={`https://ipfs.io/ipfs/${formData.ipfsHash}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block mr-3 text-xs text-blue-600 hover:text-blue-800 underline"
+          >
+            🌐 View on IPFS
+          </a>
+          <a 
+            href={`https://gateway.pinata.cloud/ipfs/${formData.ipfsHash}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block text-xs text-purple-600 hover:text-purple-800 underline"
+          >
+            📌 View on Pinata
+          </a>
+        </div>
+      </div>
+    )}
+
+    {/* Filecoin Integration Status */}
+    <FilecoinStatus 
+      dealId={formData.filecoinDeal?.dealId}
+      networkHeight={formData.filecoinDeal?.networkHeight}
+      status={formData.filecoinDeal?.status}
+      explorerUrl={formData.filecoinDeal?.explorerUrl}
+    />
+
+                {formData.documents.length > 0 && !formData.ipfsHash && (
+                    <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                        <p className="text-sm font-medium text-yellow-800">⚠️ Upload in Progress</p>
+                        <p className="text-xs text-yellow-600 mt-1">
+                          Please wait while your documents are being uploaded to IPFS...
+                        </p>
+                    </div>
+                )}
+
                 {formData.documents.length > 0 && !formData.ipfsHash && (
                     <div className="flex justify-center pt-4">
                         <button type="button" onClick={handleUploadToIpfs} disabled={isUploading} className="inline-flex w-full sm:w-auto items-center justify-center rounded-md bg-black px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-400">
@@ -352,15 +478,15 @@ export function Rwa() {
                     </div>
                 </div>
 
-                <div className={`rounded-lg border-2 p-6 text-center ${formData.isIdentityVerified ? 'border-green-500 bg-green-50' : 'border-gray-300'}`}>
+                <div className={`rounded-lg border-2 p-6 text-center ${(isIdentityVerified || isVerified) ? 'border-green-500 bg-green-50' : 'border-gray-300'}`}>
                     <h3 className="text-lg font-bold text-gray-900">Identity Verification (KYC)</h3>
-                    <p className="mt-2 text-sm text-gray-600">Verify your identity using our secure provider. This typically takes 2-5 minutes.</p>
-                    {formData.isIdentityVerified ?
+                    <p className="mt-2 text-sm text-gray-600">Verify your identity on-chain. This will register you in the Identity Registry contract.</p>
+                    {(isIdentityVerified || isVerified) ?
                         <div className="mt-4 text-sm font-semibold text-green-700 inline-flex items-center">
-                            <CircleCheck className="h-5 w-5 mr-2" /> Verified
+                            <CircleCheck className="h-5 w-5 mr-2" /> Verified on-chain
                         </div> :
-                        <button type="button" onClick={handleVerifyIdentity} disabled={isVerifying} className="mt-6 inline-flex items-center rounded-md bg-black px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-400">
-                            {isVerifying ? <><Spinner /> Verifying...</> : 'Start Verification'}
+                        <button type="button" onClick={handleVerifyIdentity} disabled={isVerifying || !isConnected} className="mt-6 inline-flex items-center rounded-md bg-black px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-400">
+                            {isVerifying ? <><Spinner /> Verifying...</> : 'Verify Identity'}
                         </button>
                     }
                 </div>
@@ -384,9 +510,9 @@ export function Rwa() {
                   </dl>
                 </div>
 
-                {!formData.txHash ?
+                {!isTokenMinted && !formData.txHash ?
                   <div className="flex justify-center pt-4">
-                    <button type="button" onClick={handleMintToken} disabled={isMinting} className="inline-flex w-full sm:w-auto items-center justify-center rounded-md bg-black px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-400">
+                    <button type="button" onClick={handleMintToken} disabled={isMinting || !isConnected} className="inline-flex w-full sm:w-auto items-center justify-center rounded-md bg-black px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-400">
                         {isMinting ? <><Spinner /> Minting Token...</> : <><CoinsIcon className="h-5 w-5 mr-2" /> Mint RWA Token</>}
                     </button>
                   </div>
@@ -396,7 +522,7 @@ export function Rwa() {
                           <div className="flex-shrink-0"><CircleCheck className="h-5 w-5 text-green-500" /></div>
                           <div className="ml-3">
                               <h3 className="text-sm font-medium text-green-800">Token Successfully Minted!</h3>
-                              <div className="mt-2 text-sm text-green-700"><p className="font-mono text-xs break-all">Tx Hash: {formData.txHash}</p></div>
+                              <div className="mt-2 text-sm text-green-700"><p className="font-mono text-xs break-all">Transaction: {formData.txHash || 'Confirmed on-chain'}</p></div>
                               <div className="mt-4"><Link to="/borrow" className="text-sm font-bold text-blue-600 hover:text-blue-500">Proceed to Borrow &rarr;</Link></div>
                           </div>
                       </div>

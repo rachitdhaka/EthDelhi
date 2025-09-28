@@ -4,6 +4,7 @@ import { Header } from './components/Header';
 import { Footer } from './components/Footer';
 import { HomePage } from './pages/HomePage';
 import { BorrowPage } from './pages/Borrow';
+import { EnhancedBorrowPage } from './pages/EnhancedBorrow';
 import { LendPage } from './pages/LendPage';
 import { DashboardPage } from './pages/DashboardPage';
 import {Rwa} from './pages/Rwa';
@@ -18,7 +19,7 @@ export function App() {
         <main className="flex-grow">
           <Routes>
             <Route path="/" element={<Landing />} />
-            <Route path="/borrow" element={<BorrowPage />} />
+            <Route path="/borrow" element={<EnhancedBorrowPage />} />
             <Route path="/lend" element={<LendPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             {/* <Route path="/Landing" element={<Landing />} /> */}
